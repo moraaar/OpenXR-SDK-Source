@@ -92,7 +92,27 @@ find_package(Threads REQUIRED)
 find_package(JsonCpp)
 
 ### All options defined here
-option(BUILD_LOADER "Build loader" ON)
+if(ANDROID)
+    option(BUILD_LOADER "Build loader" OFF)
+    add_library(openxr_loader SHARED IMPORTED)
+    set_property(
+        TARGET
+        openxr_loader
+        PROPERTY
+        IMPORTED_LOCATION
+        E:/Amazon/GitHub/o3de-extras/Gems/OpenXRVk/External/OculusOpenXRMobileSDK/OpenXR/Libs/Android/${ANDROID_ABI}/${CMAKE_BUILD_TYPE}/libopenxr_loader.so
+    )
+    add_library(vulkan_validation SHARED IMPORTED)
+    set_property(
+        TARGET
+        vulkan_validation
+        PROPERTY
+        IMPORTED_LOCATION
+        C:/Android/vulkan-validation/android-binaries-1.3.211.0/${ANDROID_ABI}/libVkLayer_khronos_validation.so
+    )
+else()
+    option(BUILD_LOADER "Build loader" ON)
+endif()
 option(BUILD_ALL_EXTENSIONS "Build loader and layers with all extensions" OFF)
 option(
     BUILD_LOADER_WITH_EXCEPTION_HANDLING

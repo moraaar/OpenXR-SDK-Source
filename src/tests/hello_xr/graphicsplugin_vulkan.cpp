@@ -2,6 +2,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#ifdef XR_USE_GRAPHICS_API_VULKAN
+#define GLAD_VULKAN_IMPLEMENTATION
+#pragma warning(disable : 4551)
+#include "pch.h"
+#undef GLAD_VULKAN_IMPLEMENTATION
+#endif
+
 #include "pch.h"
 #include "common.h"
 #include "geometry.h"
@@ -1306,6 +1313,8 @@ struct VulkanGraphicsPlugin : public IGraphicsPlugin {
     }
 
     void InitializeDevice(XrInstance instance, XrSystemId systemId) override {
+        gladLoaderLoadVulkan(VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
+
         // Create the Vulkan device for the adapter associated with the system.
         // Extension function must be loaded by name
         XrGraphicsRequirementsVulkan2KHR graphicsRequirements{XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN2_KHR};
@@ -1350,11 +1359,12 @@ struct VulkanGraphicsPlugin : public IGraphicsPlugin {
 
         XrVulkanInstanceCreateInfoKHR createInfo{XR_TYPE_VULKAN_INSTANCE_CREATE_INFO_KHR};
         createInfo.systemId = systemId;
-        createInfo.pfnGetInstanceProcAddr = &vkGetInstanceProcAddr;
+        createInfo.pfnGetInstanceProcAddr = vkGetInstanceProcAddr;
         createInfo.vulkanCreateInfo = &instInfo;
         createInfo.vulkanAllocator = nullptr;
         CHECK_XRCMD(CreateVulkanInstanceKHR(instance, &createInfo, &m_vkInstance, &err));
         CHECK_VKCMD(err);
+        gladLoaderLoadVulkan(m_vkInstance, VK_NULL_HANDLE, VK_NULL_HANDLE);
 
         vkCreateDebugReportCallbackEXT =
             (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(m_vkInstance, "vkCreateDebugReportCallbackEXT");
@@ -1374,6 +1384,7 @@ struct VulkanGraphicsPlugin : public IGraphicsPlugin {
         deviceGetInfo.systemId = systemId;
         deviceGetInfo.vulkanInstance = m_vkInstance;
         CHECK_XRCMD(GetVulkanGraphicsDevice2KHR(instance, &deviceGetInfo, &m_vkPhysicalDevice));
+        gladLoaderLoadVulkan(m_vkInstance, m_vkPhysicalDevice, VK_NULL_HANDLE);
 
         VkDeviceQueueCreateInfo queueInfo{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
         float queuePriorities = 0;
@@ -1413,12 +1424,13 @@ struct VulkanGraphicsPlugin : public IGraphicsPlugin {
 
         XrVulkanDeviceCreateInfoKHR deviceCreateInfo{XR_TYPE_VULKAN_DEVICE_CREATE_INFO_KHR};
         deviceCreateInfo.systemId = systemId;
-        deviceCreateInfo.pfnGetInstanceProcAddr = &vkGetInstanceProcAddr;
+        deviceCreateInfo.pfnGetInstanceProcAddr = vkGetInstanceProcAddr;
         deviceCreateInfo.vulkanCreateInfo = &deviceInfo;
         deviceCreateInfo.vulkanPhysicalDevice = m_vkPhysicalDevice;
         deviceCreateInfo.vulkanAllocator = nullptr;
         CHECK_XRCMD(CreateVulkanDeviceKHR(instance, &deviceCreateInfo, &m_vkDevice, &err));
         CHECK_VKCMD(err);
+        gladLoaderLoadVulkan(m_vkInstance, m_vkPhysicalDevice, m_vkDevice);
 
         vkGetDeviceQueue(m_vkDevice, queueInfo.queueFamilyIndex, 0, &m_vkQueue);
 
